@@ -1,183 +1,182 @@
 #Calculadora Python
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, font
 import ast
-import operator
+import operator as op
 
-# --- Função de avaliação segura de expressões ---
-# Aceita números, parênteses e operadores: + - * / ** % (potência e módulo)
+# --- Avaliador seguro de expressões (sem eval direto) ---
 ALLOWED_OPERATORS = {
-    ast.Add: operator.add,
-    ast.Sub: operator.sub,
-    ast.Mult: operator.mul,
-    ast.Div: operator.truediv,
-    ast.Pow: operator.pow,
-    ast.Mod: operator.mod,
+    ast.Add: op.add,
+    ast.Sub: op.sub,
+    ast.Mult: op.mul,
+    ast.Div: op.truediv,
+    ast.Mod: op.mod,
+    ast.Pow: op.pow,
+    ast.USub: op.neg,
+    ast.UAdd: op.pos,
 }
-
-ALLOWED_UNARY = {
-    ast.UAdd: operator.pos,
-    ast.USub: operator.neg,
-}
-
 
 def safe_eval(expr: str):
-    """
-    Avalia expressões matemáticas simples de forma segura usando AST.
-    Lança ValueError se a expressão contiver algo não permitido.
-    """
-    expr = expr.strip()
-    if not expr:
-        raise ValueError("Expressão vazia")
+    """Avalia expressão aritmética de forma segura."""
+    try:
+        node = ast.parse(expr, mode='eval').body
+        return _eval_node(node)
+    except Exception as e:
+        raise ValueError("Expressão inválida") from e
 
-    node = ast.parse(expr, mode="eval")
+def _eval_node(node):
+    if isinstance(node, ast.Num):
+        return node.n
+    if hasattr(ast, "Constant") and isinstance(node, ast.Constant):
+        if isinstance(node.value, (int, float)):
+            return node.value
+        raise ValueError("Tipo não suportado")
+    if isinstance(node, ast.BinOp):
+        left = _eval_node(node.left)
+        right = _eval_node(node.right)
+        op_type = type(node.op)
+        if op_type in ALLOWED_OPERATORS:
+            return ALLOWED_OPERATORS[op_type](left, right)
+        raise ValueError("Operador não permitido")
+    if isinstance(node, ast.UnaryOp):
+        operand = _eval_node(node.operand)
+        op_type = type(node.op)
+        if op_type in ALLOWED_OPERATORS:
+            return ALLOWED_OPERATORS[op_type](operand)
+        raise ValueError("Operador unário não permitido")
+    raise ValueError("Nodo não suportado")
 
-    def _eval(node):
-        if isinstance(node, ast.Expression):
-            return _eval(node.body)
-        if isinstance(node, ast.BinOp):
-            left = _eval(node.left)
-            right = _eval(node.right)
-            op_type = type(node.op)
-            if op_type in ALLOWED_OPERATORS:
-                return ALLOWED_OPERATORS[op_type](left, right)
-            raise ValueError(f"Operador não permitido: {op_type}")
-        if isinstance(node, ast.UnaryOp):
-            operand = _eval(node.operand)
-            op_type = type(node.op)
-            if op_type in ALLOWED_UNARY:
-                return ALLOWED_UNARY[op_type](operand)
-            raise ValueError(f"Unary operator not allowed: {op_type}")
-        if isinstance(node, ast.Constant):  # Python 3.8+
-            if isinstance(node.value, (int, float)):
-                return node.value
-            raise ValueError("Somente números são permitidos")
-        if isinstance(node, ast.Num):  # older AST node
-            return node.n
-        if isinstance(node, ast.Call):
-            raise ValueError("Chamadas de função não são permitidas")
-        raise ValueError(f"Elemento não permitido: {type(node)}")
-
-    return _eval(node)
-
-
-# --- UI ---
-class Calculadora(tk.Tk):
+# --- Interface gráfica ---
+class FlutterLikeCalculator(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Calculadora Tkinter")
+        self.title("Calculadora (Tkinter - estilo Flutter)")
+        self.geometry("360x520")
         self.resizable(False, False)
-        self.configure(padx=8, pady=8)
+        self.configure(bg="#f2f4f7")
 
-        self.valor = tk.StringVar()
-        self._build_ui()
-        self._bind_keys()
+        self.font_large = font.Font(family="Helvetica", size=28, weight="bold")
+        self.font_medium = font.Font(family="Helvetica", size=14)
+        self.font_button = font.Font(family="Helvetica", size=16, weight="bold")
 
-    def _build_ui(self):
-        entry = ttk.Entry(self, textvariable=self.valor, font=("Segoe UI", 20), justify="right")
-        entry.grid(row=0, column=0, columnspan=4, sticky="nsew", pady=(0, 8))
-        entry.focus_set()
+        self.expression = ""
 
-        btn_specs = [
-            ("C", 1, 0, self.limpar),
-            ("⌫", 1, 1, self.apagar),
-            ("%", 1, 2, lambda: self.adicionar("%")),
-            ("/", 1, 3, lambda: self.adicionar("/")),
+        container = tk.Frame(self, bg="#f2f4f7")
+        container.pack(expand=True, fill="both", padx=18, pady=20)
 
-            ("7", 2, 0, lambda: self.adicionar("7")),
-            ("8", 2, 1, lambda: self.adicionar("8")),
-            ("9", 2, 2, lambda: self.adicionar("9")),
-            ("*", 2, 3, lambda: self.adicionar("*")),
+        card = tk.Frame(container, bg="#ffffff", bd=0, highlightthickness=0)
+        shadow = tk.Frame(container, bg="#e6e9ef", bd=0)
+        shadow.place(relx=0.5, rely=0.03, anchor="n", relwidth=1)
+        card.place(relx=0.5, rely=0.03, anchor="n", relwidth=1, relheight=1)
 
-            ("4", 3, 0, lambda: self.adicionar("4")),
-            ("5", 3, 1, lambda: self.adicionar("5")),
-            ("6", 3, 2, lambda: self.adicionar("6")),
-            ("-", 3, 3, lambda: self.adicionar("-")),
+        # Display principal
+        self.display_var = tk.StringVar(value="0")
+        display_frame = tk.Frame(card, bg="#ffffff")
+        display_frame.pack(fill="x", padx=12, pady=(18, 6))
 
-            ("1", 4, 0, lambda: self.adicionar("1")),
-            ("2", 4, 1, lambda: self.adicionar("2")),
-            ("3", 4, 2, lambda: self.adicionar("3")),
-            ("+", 4, 3, lambda: self.adicionar("+")),
+        self.display_label = tk.Label(
+            display_frame,
+            textvariable=self.display_var,
+            anchor="e",
+            font=self.font_large,
+            bg="#ffffff",
+            fg="#111827",
+            padx=10
+        )
+        self.display_label.pack(fill="x")
 
-            ("+/-", 5, 0, self.trocar_sinal),
-            ("0", 5, 1, lambda: self.adicionar("0")),
-            (".", 5, 2, lambda: self.adicionar(".")),
-            ("=", 5, 3, self.calcular),
+        self.small_expr_var = tk.StringVar(value="")
+        small_label = tk.Label(
+            display_frame,
+            textvariable=self.small_expr_var,
+            anchor="e",
+            font=self.font_medium,
+            bg="#ffffff",
+            fg="#6b7280"
+        )
+        small_label.pack(fill="x", pady=(4, 0))
+
+        # Botões
+        buttons_frame = tk.Frame(card, bg="#ffffff")
+        buttons_frame.pack(expand=True, fill="both", padx=12, pady=18)
+
+        btn_defs = [
+            [("C", "clear"), ("⌫", "back"), ("%", "%"), ("/", "/")],
+            [("7", "7"), ("8", "8"), ("9", "9"), ("*", "*")],
+            [("4", "4"), ("5", "5"), ("6", "6"), ("-", "-")],
+            [("1", "1"), ("2", "2"), ("3", "3"), ("+", "+")],
+            [("0", "0"), (".", "."), ("=", "equals")],
         ]
 
-        for (text, r, c, cmd) in btn_specs:
-            btn = ttk.Button(self, text=text, command=cmd)
-            btn.grid(row=r, column=c, sticky="nsew", padx=4, pady=4)
+        for r, row in enumerate(btn_defs):
+            buttons_frame.rowconfigure(r, weight=1, pad=6)
+            for c, (text, val) in enumerate(row):
+                buttons_frame.columnconfigure(c, weight=1, pad=6)
+                btn = tk.Button(
+                    buttons_frame,
+                    text=text,
+                    bg="#f8fafc",
+                    bd=0,
+                    relief="flat",
+                    font=self.font_button,
+                    activebackground="#eef2ff",
+                    padx=8,
+                    pady=8,
+                    command=lambda v=val: self.on_button_press(v)
+                )
 
-        # Ajusta colunas/linhas para redimensionamento (mesmo que fixed size)
-        for i in range(6):
-            self.grid_rowconfigure(i, weight=1)
-        for j in range(4):
-            self.grid_columnconfigure(j, weight=1)
+                if val in {"/", "*", "-", "+", "%"}:
+                    btn.configure(bg="#0ea5a4", fg="white", activebackground="#089f99")
+                elif val == "equals":
+                    btn.configure(bg="#6366f1", fg="white", activebackground="#5450d9")
+                elif val in {"clear", "back"}:
+                    btn.configure(bg="#f97316", fg="white", activebackground="#f65a00")
+                else:
+                    btn.configure(fg="#111827")
 
-    # --- ações ---
-    def adicionar(self, s: str):
-        cur = self.valor.get()
-        # evita dois pontos ou múltiplos operadores inicialmente (simples heurística)
-        self.valor.set(cur + s)
+                btn.grid(row=r, column=c, sticky="nsew", padx=6, pady=6)
 
-    def limpar(self):
-        self.valor.set("")
-
-    def apagar(self):
-        self.valor.set(self.valor.get()[:-1])
-
-    def trocar_sinal(self):
-        cur = self.valor.get().strip()
-        if not cur:
+    def on_button_press(self, val):
+        if val == "clear":
+            self.expression = ""
+            self.update_display()
             return
-        # tenta avaliar e inverter sinal; fallback simples
+        if val == "back":
+            self.expression = self.expression[:-1]
+            self.update_display()
+            return
+        if val == "equals":
+            self.calculate()
+            return
+
+        self.expression += val
+        self.update_display()
+
+    def calculate(self):
+        if not self.expression:
+            return
         try:
-            val = safe_eval(cur)
-            val = -val
-            self.valor.set(self._format_result(val))
+            result = safe_eval(self.expression)
+            if isinstance(result, float) and result.is_integer():
+                result = int(result)
+            self.small_expr_var.set(self.expression + " =")
+            self.expression = str(result)
+            self.update_display()
         except Exception:
-            # fallback: se começa com '-', remove; senão coloca '-'
-            if cur.startswith("-"):
-                self.valor.set(cur[1:])
-            else:
-                self.valor.set("-" + cur)
+            self.small_expr_var.set("Erro")
+            self.display_var.set("Erro")
+            self.expression = ""
 
-    def calcular(self, _event=None):
-        expr = self.valor.get()
-        try:
-            resultado = safe_eval(expr)
-            self.valor.set(self._format_result(resultado))
-        except Exception as e:
-            self.valor.set("Erro")
-            # opcional: após 1.2s limpamos a mensagem de erro
-            self.after(1200, lambda: self.valor.set(""))
-
-    def _format_result(self, value):
-        # mostra inteiro sem .0
-        if isinstance(value, float):
-            if value.is_integer():
-                return str(int(value))
-            # limita casas decimais (removendo zeros desnecessários)
-            s = f"{value:.10f}".rstrip("0").rstrip(".")
-            return s
-        return str(value)
-
-    # --- teclado ---
-    def _bind_keys(self):
-        self.bind("<Return>", self.calcular)
-        self.bind("<KP_Enter>", self.calcular)
-        self.bind("<Escape>", lambda e: self.limpar())
-        self.bind("<BackSpace>", lambda e: self.apagar())
-        # números, operadores básicos e ponto
-        for key in "0123456789+-*/().%":
-            self.bind(key, lambda e, ch=key: self.adicionar(ch))
-        # tecla +/- (não existe pad numérico universal) -> use n para trocar sinal
-        self.bind("n", lambda e: self.trocar_sinal())
-
+    def update_display(self):
+        if not self.expression:
+            self.display_var.set("0")
+            self.small_expr_var.set("")
+        else:
+            shown = self.expression[-18:] if len(self.expression) > 18 else self.expression
+            self.display_var.set(shown)
 
 if __name__ == "__main__":
-    app = Calculadora()
+    app = FlutterLikeCalculator()
     app.mainloop()
 # funcao +
 def adicao(valor_1, valor_2):
