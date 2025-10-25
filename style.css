@@ -1,0 +1,167 @@
+@font-face{
+    src: url(fonts/static/OpenSans-Light.ttf);
+    font-family: OpenSans-Light;
+}
+
+@font-face{
+    src: url(fonts/static/OpenSans-LightItalic.ttf);
+    font-family: OpenSans-LightItalic;
+}
+*{
+    box-sizing: border-box;
+}
+body{
+    background-color: antiquewhite;
+    background-image: none;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    
+}
+h1{
+    border: 3px solid magenta;
+    border-radius: 20px;
+    color:black;
+    font-family:OpenSans-Light
+}
+p{
+    font-family: OpenSans-LightItalic, "courier new";
+    font-size: 1em;
+    font-weight: normal;
+    font-style: normal;
+
+}
+.odd{
+    color:aqua
+}
+.even{
+    color:rgb(223, 28, 223)
+}
+h2{
+    text-shadow: 2px 1px 5px red, -2px -1px 5px blue ;
+}
+#box3{
+    width: 100px; 
+    height: 100px; 
+    background-color: aliceblue;
+    box-shadow: 2px 1px 5px;
+}
+.box{
+    border: 2px solid;
+    font-size: 2em;
+    width: 100px;
+    height: 100px;
+    
+}
+#box1{
+    background-color: red;
+}
+#box2{
+    background-color: blue;
+}
+#img1{
+    float: left;
+    margin-right: 10px;
+}
+#img2{
+    float: right;
+    margin-right: 10px
+}
+.div1{
+    border: 2px solid;
+    height: 50px; 
+    overflow: auto;
+}
+.div{
+    background-color: aqua;
+    display: inline;
+    visibility: initial;
+}
+.span{
+    background-color: rgb(223, 28, 223);
+    display: inline-block;
+    visibility: initial;
+}
+.container{
+    background-color: aquamarine;
+    height: 135px;
+}
+.box2{
+    border: 2px solid;
+    box-sizing: border-box;
+    padding: 25px;
+    height: auto;
+    width: 50%;
+    float: left;
+    text-align: center;
+
+    min-width: none;
+    max-width: none;
+}
+#box4{
+    width: 200px;
+    height: 200px;
+    background-color: rgb(223, 28, 223);
+    position: sticky;
+    bottom: 0%;
+}
+#box5{
+    width: 100px;
+    height: 100px;
+    background-color: aqua;
+    position: absolute;
+}
+#container1{
+    border: 2px solid;
+
+}
+#container1 + p{
+    background-color: aqua;
+}
+a:link{
+    color: aqua;
+}
+a:hover{
+    color: rgb(223, 28, 223);
+    font-size: 1.1em;
+}
+a:active{
+    color: white;
+    font-size: 1.1em;
+}
+li:hover{
+    background-color: white;
+}
+li:not(:hover){
+    background-color: antiquewhite
+}
+li:nth-child(odd){
+    background-color: aqua
+}
+li:nth-child(even){
+    background-color: rgb(223, 28, 223)
+}
+#greeting p{
+    background-color: white;
+    padding: 10px;
+    display: none;
+}
+#greeting:hover p{
+    background-color: antiquewhite;
+    display: block;
+}
+h3::first-letter{
+    font-size: 2em;
+    font-style: italic;
+}
+p::selection{
+    color: white;
+    background-color: black;
+}
+#beauties li::before{
+    content: "<3";
+}
+#beauties li::after{
+    content: "<3";
+}
+   
